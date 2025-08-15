@@ -94,19 +94,30 @@ func TestLocateCard(t *testing.T) {
 	}
 }
 
+func largeTest() *TestCase {
+	size := 10000000
+	numbers := make([]int, 0, size)
+	for i := size; i > 0; i-- {
+		numbers = append(numbers, i)
+	}
+	return &TestCase{
+		items:    numbers,
+		target:   2,
+		expected: 9999998,
+	}
+}
+
 // go test -bench=.
 func BenchmarkLocateCardLinear(b *testing.B) {
-	cards := []int{13, 11, 10, 7, 4, 3, 1, 0}
-	query := 0
+	test := largeTest()
 	for b.Loop() {
-		LocateCardLinear(cards, query)
+		LocateCardLinear(test.items, test.target)
 	}
 }
 
 func BenchmarkLocateCard(b *testing.B) {
-	cards := []int{13, 11, 10, 7, 4, 3, 1, 0}
-	query := 0
+	test := largeTest()
 	for b.Loop() {
-		LocateCard(cards, query)
+		LocateCard(test.items, test.target)
 	}
 }
