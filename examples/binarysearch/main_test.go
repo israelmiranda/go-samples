@@ -175,3 +175,42 @@ func TestFirstAndLastPosition(t *testing.T) {
 		})
 	}
 }
+
+type TestCaseThree struct {
+	items    []int
+	expected int
+}
+
+var testCasesThree = []TestCaseThree{
+	{
+		items:    []int{2, 1},
+		expected: 1,
+	},
+	{
+		items:    []int{1, 2, 3, 4, 5, -1, 0},
+		expected: 5,
+	},
+	{
+		items:    []int{0, 1, 3, 5, 6},
+		expected: -1,
+	},
+	{
+		items:    []int{},
+		expected: -1,
+	},
+}
+
+func TestCountRotationsLinear(t *testing.T) {
+	for _, tc := range testCasesThree {
+		testName := fmt.Sprintf("%d", tc.items)
+		t.Run(testName, func(t *testing.T) {
+			// act
+			result := CountRotationsLinear(tc.items)
+
+			// assert
+			if result != tc.expected {
+				t.Errorf("got %d, expected %d", result, tc.expected)
+			}
+		})
+	}
+}
