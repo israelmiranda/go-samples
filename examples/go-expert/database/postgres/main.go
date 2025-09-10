@@ -22,6 +22,26 @@ func NewProduct(name string, price float64) *Product {
 	}
 }
 
+func findAll(db *sql.DB) ([]Product, error) {
+	rows, err := db.Query("SELECT id, name, price FROM public.products")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []Product
+	for rows.Next() {
+		var product Product
+		err = rows.Scan(&product.ID, &product.Name, &product.Price)
+		if err != nil {
+			return nil, err
+		}
+		products = append(products, product)
+	}
+
+	return products, nil
+}
+
 func findOne(db *sql.DB, id string) (*Product, error) {
 	stmt, err := db.Prepare("SELECT id, name, price FROM public.products WHERE id = $1")
 	if err != nil {
@@ -66,6 +86,20 @@ func update(db *sql.DB, product *Product) error {
 	return nil
 }
 
+func delete(db *sql.DB, id string) error {
+	stmt, err := db.Prepare("DELETE FROM public.products WHERE id = $1")
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+
+	_, err = stmt.Exec(id)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func main() {
 	db, err := sql.Open("postgres", "host=localhost port=5432 user=fullcycle_user password=p@ssw0rd dbname=fullcycle sslmode=disable")
 	if err != nil {
@@ -75,20 +109,38 @@ func main() {
 
 	productOne := NewProduct("product one", 1000.05)
 
+	// insert
 	err = insert(db, productOne)
 	if err != nil {
 		panic(err)
 	}
 
+	// update
 	productOne.Price = 100.0
 	err = update(db, productOne)
 	if err != nil {
 		panic(err)
 	}
 
+	// find one
 	p, err := findOne(db, productOne.ID)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Printf("%v - $%.2f\n", p.Name, p.Price)
+
+	// find all
+	products, err := findAll(db)
+	if err != nil {
+		panic(err)
+	}
+	for _, p := range products {
+		fmt.Printf("%v - $%.2f\n", p.Name, p.Price)
+	}
+
+	// delete
+	err = delete(db, productOne.ID)
+	if err != nil {
+		panic(err)
+	}
 }
