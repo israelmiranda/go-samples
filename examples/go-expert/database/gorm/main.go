@@ -1,11 +1,10 @@
 package main
 
 import (
-	"fmt"
-
 	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 // type Product struct {
@@ -35,26 +34,39 @@ import (
 // 	gorm.Model
 // }
 
+// type Category struct {
+// 	ID       uuid.UUID `gorm:"primaryKey"`
+// 	Name     string
+// 	Products []Product
+// }
+
+// type Product struct {
+// 	ID           uuid.UUID `gorm:"primaryKey"`
+// 	Name         string
+// 	Price        float64
+// 	CategoryID   uuid.UUID
+// 	Category     Category
+// 	SerialNumber SerialNumber
+// }
+
 type Category struct {
 	ID       uuid.UUID `gorm:"primaryKey"`
 	Name     string
-	Products []Product
+	Products []Product `gorm:"many2many:products_categories"`
 }
 
 type Product struct {
-	ID           uuid.UUID `gorm:"primaryKey"`
-	Name         string
-	Price        float64
-	CategoryID   uuid.UUID
-	Category     Category
-	SerialNumber SerialNumber
+	ID         uuid.UUID `gorm:"primaryKey"`
+	Name       string
+	Price      float64
+	Categories []Category `gorm:"many2many:products_categories"`
 }
 
-type SerialNumber struct {
-	ID        uuid.UUID `gorm:"primaryKey"`
-	Number    string
-	ProductID uuid.UUID
-}
+// type SerialNumber struct {
+// 	ID        uuid.UUID `gorm:"primaryKey"`
+// 	Number    string
+// 	ProductID uuid.UUID
+// }
 
 // func deleteAll(db *gorm.DB) {
 // 	db.Session(&gorm.Session{AllowGlobalUpdate: true}).Delete(&Product{})
@@ -131,7 +143,8 @@ func main() {
 	}
 	// db.AutoMigrate(&Product{})
 	// db.AutoMigrate(&Product{}, &Category{})
-	db.AutoMigrate(&Product{}, &Category{}, &SerialNumber{})
+	// db.AutoMigrate(&Product{}, &Category{}, &SerialNumber{})
+	db.AutoMigrate(&Product{}, &Category{})
 
 	// delete all
 	// deleteAll(db)
@@ -226,20 +239,57 @@ func main() {
 	// for _, p := range category.Products {
 	// 	fmt.Println(p)
 	// }
-	var categories []Category
+	// var categories []Category
 	// err = db.Model(&Category{}).Preload("Products").Preload("Products.SerialNumber").Find(&categories).Error
-	err = db.Model(&Category{}).Preload("Products.SerialNumber").Find(&categories).Error
+	// err = db.Model(&Category{}).Preload("Products.SerialNumber").Find(&categories).Error
+	// if err != nil {
+	// 	panic(err)
+	// }
+
+	// for _, category := range categories {
+	// 	fmt.Println("Category:", category.Name)
+	// 	for _, product := range category.Products {
+	// 		fmt.Println(
+	// 			" - Product:", product.Name,
+	// 			"-", product.SerialNumber.Number,
+	// 		)
+	// 	}
+	// }
+
+	// // create category
+	// categoryOne := Category{ID: uuid.New(), Name: "category one"}
+	// db.Create(&categoryOne)
+	// categoryTwo := Category{ID: uuid.New(), Name: "category two"}
+	// db.Create(&categoryTwo)
+
+	// // create product
+	// db.Create(&Product{
+	// 	ID:         uuid.New(),
+	// 	Name:       "product one",
+	// 	Price:      99.99,
+	// 	Categories: []Category{categoryOne, categoryTwo},
+	// })
+
+	// // find all many to many
+	// var categories []Category
+	// db.Preload("Products").Find(&categories)
+	// for _, category := range categories {
+	// 	fmt.Println("Category:", category.Name)
+	// 	for _, product := range category.Products {
+	// 		fmt.Println(
+	// 			" - Product:", product.Name,
+	// 		)
+	// 	}
+	// }
+
+	// pessimistic locking
+	tx := db.Begin()
+	var category Category
+	err = tx.Debug().Clauses(clause.Locking{Strength: "UPDATE"}).First(&category, "name = ?", "category one").Error
 	if err != nil {
 		panic(err)
 	}
-
-	for _, category := range categories {
-		fmt.Println("Category:", category.Name)
-		for _, product := range category.Products {
-			fmt.Println(
-				" - Product:", product.Name,
-				"-", product.SerialNumber.Number,
-			)
-		}
-	}
+	category.Name = "final category"
+	tx.Debug().Save(&category)
+	tx.Commit()
 }
