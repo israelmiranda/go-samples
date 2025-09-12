@@ -1,0 +1,18 @@
+syntax = "proto3";
+option go_package = "github.com/israelmiranda/go-samples/examples/coupon-proto";
+
+package coupon;
+
+import "google/protobuf/empty.proto";
+
+service Coupon {
+    rpc GetCoupons(google.protobuf.Empty) returns (CouponsListResponse) {}
+}
+
+message CouponsListResponse {
+    repeated CouponResponse coupons = 1;
+}
+
+message CouponResponse {
+    string code = 1;
+}
